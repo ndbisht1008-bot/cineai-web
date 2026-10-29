@@ -52,7 +52,7 @@ export function ShotCard(props: {
   const [err, setErr] = useState("");
   const editable = !busy && shot.status !== "generating" && shot.status !== "checking";
   return (
-    <li className="card grid gap-3 md:grid-cols-[180px_1fr]">
+    <li className="card grid grid-cols-[88px_1fr] gap-3 md:grid-cols-[180px_1fr]">
       <div>
         {url ? <video src={url} controls playsInline muted loop className={`w-full rounded-lg bg-black ${project.aspect === "9:16" ? "aspect-[9/16]" : "aspect-video"} object-cover`} />
           : <div className={`grid w-full place-items-center rounded-lg border border-dashed border-line bg-ink text-xs text-mute ${project.aspect === "9:16" ? "aspect-[9/16]" : "aspect-video"}`}>No clip</div>}
