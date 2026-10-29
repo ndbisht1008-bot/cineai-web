@@ -10,7 +10,7 @@ Laptop: Kali Linux, Intel i5 (4 cores), no NVIDIA GPU. Browser tests: Chromium 1
 | Unit tests (Vitest) | **30 passed** |
 | Browser tests in real Chromium (`npm run test:browser`) | **6 passed** |
 | Live call to LTX-Video from the browser (`--live`) | **Reached the Space and got its real answer** (quota used up today, see below) |
-| GitHub Actions build + deploy | See the Actions tab; filled in below after the first run |
+| GitHub Actions (CI + deploy to Pages) | **Passed** on GitHub's runner (Google Chrome): same 30 unit + 6 browser tests, then deployed. Site answers HTTP 200 and runs with no console errors (checked at phone size) |
 
 ## Unit tests
 
