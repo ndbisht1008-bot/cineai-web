@@ -1,0 +1,76 @@
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - name: Type check
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npm test
+      - name: Browser tests (Chrome on the runner, no AI quota used)
+        run: npm run test:browser
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - name: Keep browser test output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-output
+          path: e2e/out/
+          retention-days: 7
+      - name: Check Google Sign-In configuration
+        run: |
+          if [ -z "${{ vars.VITE_GOOGLE_CLIENT_ID }}" ]; then
+            echo "::warning::VITE_GOOGLE_CLIENT_ID is not set: the site will show 'No sign-in'. See SETUP.md."
+          elif ! echo "${{ vars.VITE_GOOGLE_CLIENT_ID }}" | grep -qE '^[0-9]+-[a-z0-9]+\.apps\.googleusercontent\.com$'; then
+            echo "::error::VITE_GOOGLE_CLIENT_ID does not look like a Google OAuth web client ID."; exit 1
+          fi
+      - name: Build for GitHub Pages
+        run: npm run build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+      - name: Make sure no secret or video ended up in the site
+        run: |
+          ! grep -rlE 'AIza[0-9A-Za-z_-]{35}|hf_[A-Za-z0-9]{30,}' dist/
+          ! find dist -name '*.mp4' -o -name '*.webm' | grep .
+      - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
